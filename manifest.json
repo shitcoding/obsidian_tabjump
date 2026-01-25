@@ -1,0 +1,10 @@
+{
+	"id": "tabjump",
+	"name": "TabJump",
+	"version": "1.0.0",
+	"minAppVersion": "1.0.0",
+	"description": "Switch between last two active tabs with a single hotkey (Alt-Tab behavior)",
+	"author": "Vasiliy Ivanov",
+	"authorUrl": "https://github.com/shitcoding",
+	"isDesktopOnly": false
+}
