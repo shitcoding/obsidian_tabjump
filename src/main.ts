@@ -1,4 +1,4 @@
-import { App, Hotkey, Modifier, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
+import { App, Hotkey, Modifier, Platform, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
 
 // Extend WorkspaceLeaf type to include internal 'id' property
 interface WorkspaceLeafExt extends WorkspaceLeaf {
@@ -9,7 +9,7 @@ export default class TabJumpPlugin extends Plugin {
 	private previousLeafId: string | null = null;
 	private currentLeafId: string | null = null;
 
-	async onload() {
+	onload() {
 		// Initialize with current leaf
 		const currentLeaf = this.app.workspace.getMostRecentLeaf() as WorkspaceLeafExt | null;
 		this.currentLeafId = currentLeaf?.id ?? null;
@@ -83,40 +83,32 @@ class TabJumpSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'TabJump' });
+		new Setting(containerEl)
+			.setName('TabJump settings')
+			.setHeading();
 
 		containerEl.createEl('p', {
 			text: 'Switch between the last two active tabs with a single hotkey (Alt-Tab behavior for tabs).',
+			cls: 'setting-item-description'
 		});
 
 		const setting = new Setting(containerEl)
 			.setName('Hotkey')
 			.setDesc('Click to set a hotkey for switching tabs');
 
-		const hotkeyContainer = setting.controlEl.createDiv({ cls: 'setting-hotkey' });
+		const hotkeyContainer = setting.controlEl.createDiv({ cls: 'tabjump-hotkey-container' });
 
 		this.hotkeyDisplay = hotkeyContainer.createEl('span', {
-			cls: 'hotkey-display',
+			cls: 'tabjump-hotkey-display',
 			text: this.getCurrentHotkeyText(),
 		});
-		this.hotkeyDisplay.style.cursor = 'pointer';
-		this.hotkeyDisplay.style.padding = '4px 8px';
-		this.hotkeyDisplay.style.borderRadius = '4px';
-		this.hotkeyDisplay.style.border = '1px solid var(--background-modifier-border)';
-		this.hotkeyDisplay.style.minWidth = '100px';
-		this.hotkeyDisplay.style.display = 'inline-block';
-		this.hotkeyDisplay.style.textAlign = 'center';
 
 		this.hotkeyDisplay.addEventListener('click', () => this.startRecording());
 
 		const clearBtn = hotkeyContainer.createEl('span', {
-			cls: 'hotkey-clear',
+			cls: 'tabjump-hotkey-clear',
 			text: '×',
 		});
-		clearBtn.style.cursor = 'pointer';
-		clearBtn.style.marginLeft = '8px';
-		clearBtn.style.padding = '4px 8px';
-		clearBtn.style.opacity = '0.7';
 		clearBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
 			this.clearHotkey();
@@ -136,7 +128,7 @@ class TabJumpSettingTab extends PluginSettingTab {
 
 	private hotkeyToString(hotkey: Hotkey): string {
 		const parts: string[] = [];
-		const isMac = navigator.platform.includes('Mac');
+		const isMac = Platform.isMacOS;
 
 		if (hotkey.modifiers.includes('Mod')) {
 			parts.push(isMac ? '⌘' : 'Ctrl');
@@ -180,8 +172,7 @@ class TabJumpSettingTab extends PluginSettingTab {
 
 		this.isRecording = true;
 		this.hotkeyDisplay.setText('Press keys...');
-		this.hotkeyDisplay.style.background = 'var(--interactive-accent)';
-		this.hotkeyDisplay.style.color = 'var(--text-on-accent)';
+		this.hotkeyDisplay.addClass('is-recording');
 
 		const handler = (e: KeyboardEvent) => {
 			e.preventDefault();
@@ -192,10 +183,10 @@ class TabJumpSettingTab extends PluginSettingTab {
 			}
 
 			const modifiers: Modifier[] = [];
-			if (e.ctrlKey) modifiers.push(navigator.platform.includes('Mac') ? 'Ctrl' : 'Mod');
+			if (e.ctrlKey) modifiers.push(Platform.isMacOS ? 'Ctrl' : 'Mod');
 			if (e.altKey) modifiers.push('Alt');
 			if (e.shiftKey) modifiers.push('Shift');
-			if (e.metaKey) modifiers.push(navigator.platform.includes('Mac') ? 'Mod' : 'Meta');
+			if (e.metaKey) modifiers.push(Platform.isMacOS ? 'Mod' : 'Meta');
 
 			// Normalize key names for Obsidian
 			let key = e.key;
@@ -229,8 +220,7 @@ class TabJumpSettingTab extends PluginSettingTab {
 
 		if (this.hotkeyDisplay) {
 			this.hotkeyDisplay.setText(this.getCurrentHotkeyText());
-			this.hotkeyDisplay.style.background = '';
-			this.hotkeyDisplay.style.color = '';
+			this.hotkeyDisplay.removeClass('is-recording');
 		}
 	}
 

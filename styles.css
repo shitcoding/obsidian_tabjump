@@ -1,0 +1,30 @@
+.tabjump-hotkey-container {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.tabjump-hotkey-display {
+	cursor: pointer;
+	padding: 4px 8px;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border);
+	min-width: 100px;
+	display: inline-block;
+	text-align: center;
+}
+
+.tabjump-hotkey-display.is-recording {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.tabjump-hotkey-clear {
+	cursor: pointer;
+	padding: 4px 8px;
+	opacity: 0.7;
+}
+
+.tabjump-hotkey-clear:hover {
+	opacity: 1;
+}
