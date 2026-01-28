@@ -85,7 +85,7 @@ class TabJumpSettingTab extends PluginSettingTab {
 
 		const setting = new Setting(containerEl)
 			.setName('Tab switching hotkey')
-			.setDesc('Switch between the last two active tabs with a single hotkey (Alt-Tab behavior for tabs). Click to set.');
+			.setDesc('Switch between the last two active tabs with a single hotkey (alt-tab behavior for tabs)');
 
 		const hotkeyContainer = setting.controlEl.createDiv({ cls: 'tabjump-hotkey-container' });
 
