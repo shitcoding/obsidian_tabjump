@@ -5,9 +5,11 @@ A minimal Obsidian plugin that switches between the last two active tabs (Alt-Ta
 ## Usage
 
 1. Install and enable the plugin
-2. Open Settings → Hotkeys → Search "TabJump"
-3. Assign a hotkey (e.g., `Ctrl+Tab` or `Ctrl+Space`)
-4. Press the hotkey to toggle between your two most recent tabs
+2. Open Settings → Community Plugins → TabJump (click gear icon)
+3. Assign hotkeys directly in the plugin settings, or go to Settings → Hotkeys → Search "TabJump"
+4. Use the assigned hotkeys to:
+   - Toggle between your two most recent tabs
+   - Move the current tab left or right in the tab bar
 
 ## Commands
 
@@ -33,7 +35,9 @@ nmap m :movetabright<CR>
 
 ## Features
 
-- Minimal (~50 lines)
+- **Direct hotkey assignment** in plugin settings (no need to navigate to Hotkeys menu)
+- **Tab switching** - Toggle between last two active tabs (Alt-Tab behavior)
+- **Tab reordering** - Move current tab left or right in the tab bar
 - Uses modern Obsidian API (no deprecated `activeLeaf`)
 - Mobile compatible
-- Handles edge cases (closed tabs, split panes)
+- Handles edge cases (closed tabs, split panes, boundaries)
