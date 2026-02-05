@@ -9,17 +9,26 @@ A minimal Obsidian plugin that switches between the last two active tabs (Alt-Ta
 3. Assign a hotkey (e.g., `Ctrl+Tab` or `Ctrl+Space`)
 4. Press the hotkey to toggle between your two most recent tabs
 
-## Command
+## Commands
 
 - **Switch to last active tab** (`tabjump:switch`)
+- **Move current tab left** (`tabjump:move-tab-left`)
+- **Move current tab right** (`tabjump:move-tab-right`)
 
 ## Vimrc Integration
 
 Add to `.obsidian.vimrc`:
 
 ```vim
+" Switch between last two tabs
 exmap tabjump obcommand tabjump:switch
 nmap <Space><Space> :tabjump<CR>
+
+" Move tab left/right
+exmap movetableft obcommand tabjump:move-tab-left
+exmap movetabright obcommand tabjump:move-tab-right
+nmap M :movetableft<CR>
+nmap m :movetabright<CR>
 ```
 
 ## Features

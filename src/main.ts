@@ -3,6 +3,14 @@ import { App, Hotkey, Modifier, Platform, Plugin, PluginSettingTab, Setting, Wor
 // Extend WorkspaceLeaf type to include internal 'id' property
 interface WorkspaceLeafExt extends WorkspaceLeaf {
 	id: string;
+	parentSplit: WorkspaceParentExt;  // Internal: parent container
+}
+
+// Extend WorkspaceParent with internal properties
+interface WorkspaceParentExt {
+	children: WorkspaceLeafExt[];
+	recomputeChildrenDimensions(): void;
+	selectTab?(leaf: WorkspaceLeaf): void;  // Only present on WorkspaceTabs
 }
 
 export default class TabJumpPlugin extends Plugin {
@@ -26,6 +34,18 @@ export default class TabJumpPlugin extends Plugin {
 			id: 'switch',
 			name: 'Switch to last active tab',
 			callback: () => this.switchToLastTab(),
+		});
+
+		this.addCommand({
+			id: 'move-tab-left',
+			name: 'Move current tab left',
+			callback: () => this.moveTab('left'),
+		});
+
+		this.addCommand({
+			id: 'move-tab-right',
+			name: 'Move current tab right',
+			callback: () => this.moveTab('right'),
 		});
 
 		// Add settings tab
@@ -64,6 +84,37 @@ export default class TabJumpPlugin extends Plugin {
 		}
 
 		this.app.workspace.setActiveLeaf(targetLeaf, { focus: true });
+	}
+
+	private moveTab(direction: 'left' | 'right'): void {
+		const leaf = this.app.workspace.activeLeaf as WorkspaceLeafExt | null;
+		if (!leaf) return;
+
+		const parent = leaf.parentSplit;
+		if (!parent || !parent.children) return;
+
+		const children = parent.children;
+		const currentIndex = children.indexOf(leaf);
+
+		// Guard: leaf not found or single tab
+		if (currentIndex === -1 || children.length <= 1) return;
+
+		const targetIndex = direction === 'left'
+			? currentIndex - 1
+			: currentIndex + 1;
+
+		// Guard: at boundary
+		if (targetIndex < 0 || targetIndex >= children.length) return;
+
+		// Perform the swap
+		children.splice(currentIndex, 1);
+		children.splice(targetIndex, 0, leaf);
+
+		// Refresh UI
+		if (parent.selectTab) {
+			parent.selectTab(leaf);
+		}
+		parent.recomputeChildrenDimensions();
 	}
 }
 
