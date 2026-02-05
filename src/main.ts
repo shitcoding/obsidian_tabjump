@@ -87,10 +87,24 @@ export default class TabJumpPlugin extends Plugin {
 	}
 
 	private moveTab(direction: 'left' | 'right'): void {
-		const leaf = this.app.workspace.activeLeaf as WorkspaceLeafExt | null;
-		if (!leaf) return;
+		if (!this.currentLeafId) {
+			return;
+		}
 
-		const parent = leaf.parentSplit;
+		// Find leaf by ID
+		let leaf: WorkspaceLeafExt | null = null;
+		this.app.workspace.iterateAllLeaves((l: WorkspaceLeaf) => {
+			const leafExt = l as WorkspaceLeafExt;
+			if (leafExt.id === this.currentLeafId) {
+				leaf = leafExt;
+			}
+		});
+
+		if (!leaf) {
+			return;
+		}
+
+		const parent = (leaf as WorkspaceLeafExt).parentSplit;
 		if (!parent || !parent.children) return;
 
 		const children = parent.children;
