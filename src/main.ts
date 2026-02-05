@@ -118,12 +118,16 @@ export default class TabJumpPlugin extends Plugin {
 	}
 }
 
-const COMMAND_ID = 'tabjump:switch';
+const COMMAND_IDS = {
+	SWITCH: 'tabjump:switch',
+	MOVE_LEFT: 'tabjump:move-tab-left',
+	MOVE_RIGHT: 'tabjump:move-tab-right',
+} as const;
 
 class TabJumpSettingTab extends PluginSettingTab {
 	plugin: TabJumpPlugin;
-	private isRecording = false;
-	private hotkeyDisplay: HTMLElement | null = null;
+	private recordingStates: Map<string, boolean> = new Map();
+	private hotkeyDisplays: Map<string, HTMLElement> = new Map();
 
 	constructor(app: App, plugin: TabJumpPlugin) {
 		super(app, plugin);
@@ -134,18 +138,51 @@ class TabJumpSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
+		// Tab switching hotkey
+		this.createHotkeySetting(
+			containerEl,
+			COMMAND_IDS.SWITCH,
+			'Tab switching hotkey',
+			'Switch between the last two active tabs with a single hotkey (alt-tab behavior for tabs)'
+		);
+
+		// Move tab left hotkey
+		this.createHotkeySetting(
+			containerEl,
+			COMMAND_IDS.MOVE_LEFT,
+			'Move tab left hotkey',
+			'Move the current tab one position to the left'
+		);
+
+		// Move tab right hotkey
+		this.createHotkeySetting(
+			containerEl,
+			COMMAND_IDS.MOVE_RIGHT,
+			'Move tab right hotkey',
+			'Move the current tab one position to the right'
+		);
+	}
+
+	private createHotkeySetting(
+		containerEl: HTMLElement,
+		commandId: string,
+		name: string,
+		description: string
+	): void {
 		const setting = new Setting(containerEl)
-			.setName('Tab switching hotkey')
-			.setDesc('Switch between the last two active tabs with a single hotkey (alt-tab behavior for tabs)');
+			.setName(name)
+			.setDesc(description);
 
 		const hotkeyContainer = setting.controlEl.createDiv({ cls: 'tabjump-hotkey-container' });
 
-		this.hotkeyDisplay = hotkeyContainer.createEl('span', {
+		const hotkeyDisplay = hotkeyContainer.createEl('span', {
 			cls: 'tabjump-hotkey-display',
-			text: this.getCurrentHotkeyText(),
+			text: this.getCurrentHotkeyText(commandId),
 		});
 
-		this.hotkeyDisplay.addEventListener('click', () => this.startRecording());
+		this.hotkeyDisplays.set(commandId, hotkeyDisplay);
+
+		hotkeyDisplay.addEventListener('click', () => this.startRecording(commandId));
 
 		const clearBtn = hotkeyContainer.createEl('span', {
 			cls: 'tabjump-hotkey-clear',
@@ -153,14 +190,14 @@ class TabJumpSettingTab extends PluginSettingTab {
 		});
 		clearBtn.addEventListener('click', (e) => {
 			e.stopPropagation();
-			this.clearHotkey();
+			this.clearHotkey(commandId);
 		});
 	}
 
-	private getCurrentHotkeyText(): string {
+	private getCurrentHotkeyText(commandId: string): string {
 		// @ts-ignore - accessing internal API
 		const customKeys = this.app.hotkeyManager.customKeys;
-		const hotkeys: Hotkey[] = customKeys[COMMAND_ID];
+		const hotkeys: Hotkey[] = customKeys[commandId];
 
 		if (hotkeys && hotkeys.length > 0 && hotkeys[0]) {
 			return this.hotkeyToString(hotkeys[0]);
@@ -209,12 +246,15 @@ class TabJumpSettingTab extends PluginSettingTab {
 		return keyNames[key] || key.toUpperCase();
 	}
 
-	private startRecording(): void {
-		if (this.isRecording || !this.hotkeyDisplay) return;
+	private startRecording(commandId: string): void {
+		const isRecording = this.recordingStates.get(commandId);
+		const hotkeyDisplay = this.hotkeyDisplays.get(commandId);
 
-		this.isRecording = true;
-		this.hotkeyDisplay.setText('Press keys...');
-		this.hotkeyDisplay.addClass('is-recording');
+		if (isRecording || !hotkeyDisplay) return;
+
+		this.recordingStates.set(commandId, true);
+		hotkeyDisplay.setText('Press keys...');
+		hotkeyDisplay.addClass('is-recording');
 
 		const handler = (e: KeyboardEvent) => {
 			e.preventDefault();
@@ -239,8 +279,8 @@ class TabJumpSettingTab extends PluginSettingTab {
 				key,
 			};
 
-			this.setHotkey(hotkey);
-			this.stopRecording(handler);
+			this.setHotkey(commandId, hotkey);
+			this.stopRecording(commandId, handler);
 		};
 
 		document.addEventListener('keydown', handler, { capture: true });
@@ -249,38 +289,40 @@ class TabJumpSettingTab extends PluginSettingTab {
 			if (e.key === 'Escape') {
 				e.preventDefault();
 				e.stopPropagation();
-				this.stopRecording(handler);
+				this.stopRecording(commandId, handler);
 				document.removeEventListener('keydown', escHandler, { capture: true });
 			}
 		};
 		document.addEventListener('keydown', escHandler, { capture: true });
 	}
 
-	private stopRecording(handler: (e: KeyboardEvent) => void): void {
-		this.isRecording = false;
+	private stopRecording(commandId: string, handler: (e: KeyboardEvent) => void): void {
+		this.recordingStates.set(commandId, false);
 		document.removeEventListener('keydown', handler, { capture: true });
 
-		if (this.hotkeyDisplay) {
-			this.hotkeyDisplay.setText(this.getCurrentHotkeyText());
-			this.hotkeyDisplay.removeClass('is-recording');
+		const hotkeyDisplay = this.hotkeyDisplays.get(commandId);
+		if (hotkeyDisplay) {
+			hotkeyDisplay.setText(this.getCurrentHotkeyText(commandId));
+			hotkeyDisplay.removeClass('is-recording');
 		}
 	}
 
-	private setHotkey(hotkey: Hotkey): void {
+	private setHotkey(commandId: string, hotkey: Hotkey): void {
 		// @ts-ignore - accessing internal API
-		this.app.hotkeyManager.setHotkeys(COMMAND_ID, [hotkey]);
+		this.app.hotkeyManager.setHotkeys(commandId, [hotkey]);
 		// @ts-ignore - save hotkeys
 		this.app.hotkeyManager.save();
 	}
 
-	private clearHotkey(): void {
+	private clearHotkey(commandId: string): void {
 		// @ts-ignore - accessing internal API
-		this.app.hotkeyManager.setHotkeys(COMMAND_ID, []);
+		this.app.hotkeyManager.setHotkeys(commandId, []);
 		// @ts-ignore - save hotkeys
 		this.app.hotkeyManager.save();
 
-		if (this.hotkeyDisplay) {
-			this.hotkeyDisplay.setText('Click to set');
+		const hotkeyDisplay = this.hotkeyDisplays.get(commandId);
+		if (hotkeyDisplay) {
+			hotkeyDisplay.setText('Click to set');
 		}
 	}
 }
